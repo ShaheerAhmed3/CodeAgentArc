@@ -2,7 +2,8 @@
 
 A runnable, API-based fraction game built as three small Node.js and Express services.
 This repository is the checked-in example produced by CodeAgentArc from the
-architecture files at the project root. It has no browser interface.
+files under `architecture/inputs/` at the project root. It has no browser
+interface.
 
 ## What runs
 
@@ -17,15 +18,21 @@ admin updates. Games and questions live in memory, so restarting a service
 resets its data. The token is simply `user` or `admin`; this demonstrates the
 service interaction and must not be treated as secure authentication.
 
-## Run locally
+## Install and test
 
-Requires Node.js 18 or newer. From this directory:
+Requires Node.js 18 or newer. The following commands work in macOS Terminal and
+Windows PowerShell. From this directory:
 
 ```sh
 npm install
+npm test
 ```
 
-Start each service in a separate terminal from this directory:
+The seven tests start and stop all three services automatically.
+
+## Run locally on macOS
+
+Start each service in a separate Terminal window from this directory:
 
 ```sh
 PORT=3003 node services/user-service/src/start.js
@@ -33,8 +40,21 @@ PORT=3002 USER_BASE=http://localhost:3003 node services/question-service/src/sta
 PORT=3001 QUESTION_BASE=http://localhost:3002 node services/game-service/src/start.js
 ```
 
+## Run locally on Windows
+
+Start each service in a separate PowerShell window from this directory:
+
+```powershell
+$env:PORT="3003"; node services/user-service/src/start.js
+$env:PORT="3002"; $env:USER_BASE="http://localhost:3003"; node services/question-service/src/start.js
+$env:PORT="3001"; $env:QUESTION_BASE="http://localhost:3002"; node services/game-service/src/start.js
+```
+
 The order above starts dependencies before callers. Each service also has a
 `GET /healthz` endpoint.
+
+The examples below use `curl`, which is available on macOS. On Windows, use
+`curl.exe` if PowerShell maps `curl` to another command.
 
 ## Try a game
 
@@ -66,12 +86,6 @@ For a game in `Playing`, `POST /game/<gameId>/pause` moves it to `Paused`,
 `POST /game/<gameId>/gameover` ends it. Invalid transitions return HTTP 400.
 Only a question issued to the current game can be answered, and one question
 cannot score twice. A request to update questions without an admin token fails.
-
-## Tests
-
-```sh
-npm test
-```
 
 The seven integration tests start all three services on temporary ports and
 exercise play, score, help, admin updates, state transitions, and answer replay.

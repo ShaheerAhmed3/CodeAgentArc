@@ -39,17 +39,36 @@ inspection before edits, and verification before completion.
 
 ## Setup and offline tests
 
-Run from the repository root. Create a virtual environment for your platform.
+Prerequisites are Python 3.12 or newer, Git, and Node.js 18 or newer. Run the
+commands from the repository root.
+
+### macOS
 
 ~~~sh
 python3.12 -m venv .venv
-.venv/bin/python -m pip install -e ".[dev,openai]"
-.venv/bin/python -m pytest -q
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev,openai]'
+python -m pytest -q
 ~~~
 
-On Windows, use `py -3.12 -m venv .venv` and
-`.venv\Scripts\python.exe` in the following commands. Install `.[dev,gemini]`
-for Gemini, or `.[dev,gemini,openai]` for both providers. No activation is required.
+If `python3.12` is unavailable and you use Homebrew, install it with
+`brew install python@3.12`.
+
+### Windows PowerShell
+
+~~~powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev,openai]"
+python -m pytest -q
+~~~
+
+Install `.[dev,gemini]` instead for Gemini, or `.[dev,gemini,openai]` for
+both providers. After activation, the remaining Python commands are the same on
+macOS and Windows.
+
 Installation needs package access; tests need neither network nor credentials.
 The normal test process blocks network connections, and Gemini tests fake the
 SDK client. Installing without the gemini extra supports normalization/mock use
@@ -83,7 +102,7 @@ or trace configuration. The included .env.example contains only placeholders.
 Export normalized JSON to a new filename:
 
 ~~~sh
-.venv/bin/python -m code_agent.cli normalize --output generated/architecture.json
+python -m code_agent.cli normalize --output generated/architecture.json
 ~~~
 
 Existing output files are refused. Choose another filename if this export
@@ -92,7 +111,7 @@ already exists. Without --output, JSON is written to stdout.
 After configuring `OPENAI_API_KEY` locally, generate one repository:
 
 ~~~sh
-.venv/bin/python -m code_agent.cli generate --output generated/space-fractions-2 --provider openai --model gpt-5 --max-turns 40
+python -m code_agent.cli generate --output generated/space-fractions-2 --provider openai --model gpt-5 --max-turns 40
 ~~~
 
 The installed `code-agent generate` entry point accepts the same options.
@@ -114,6 +133,51 @@ Generation accepts Markdown inputs. Importing a normalized --spec is deferred;
 the normalized model is still the basis for every generation context. Topic
 fields reference sections, and duplicate whole-source text is omitted from
 the prompt while all sections and PlantUML blocks remain available.
+
+## Run the checked-in Space Fractions example
+
+The generated example uses Node.js. Install and test it from its directory.
+These commands are the same in macOS Terminal and Windows PowerShell:
+
+~~~sh
+cd generated/space-fractions
+npm install
+npm test
+~~~
+
+The seven integration tests start all three services on temporary ports. To run
+the services manually, open three terminals in `generated/space-fractions`.
+
+### macOS service commands
+
+~~~sh
+PORT=3003 node services/user-service/src/start.js
+PORT=3002 USER_BASE=http://localhost:3003 node services/question-service/src/start.js
+PORT=3001 QUESTION_BASE=http://localhost:3002 node services/game-service/src/start.js
+~~~
+
+### Windows PowerShell service commands
+
+~~~powershell
+$env:PORT="3003"; node services/user-service/src/start.js
+$env:PORT="3002"; $env:USER_BASE="http://localhost:3003"; node services/question-service/src/start.js
+$env:PORT="3001"; $env:QUESTION_BASE="http://localhost:3002"; node services/game-service/src/start.js
+~~~
+
+Start them in the displayed order. The User service listens on port 3003,
+Question on 3002, and Game on 3001. Verify them from a fourth terminal:
+
+~~~sh
+curl http://localhost:3003/healthz
+curl http://localhost:3002/healthz
+curl http://localhost:3001/healthz
+curl http://localhost:3001/play
+~~~
+
+In Windows PowerShell, use `curl.exe` in place of `curl` if PowerShell maps
+`curl` to another command. See the
+[Space Fractions README](generated/space-fractions/README.md) for the complete
+game and admin request flow.
 
 ## Providers and tools
 
