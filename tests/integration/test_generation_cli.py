@@ -43,12 +43,18 @@ def test_cli_provider_failure_never_prints_key(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("GEMINI_API_KEY", sentinel)
 
     def fail(*args, **kwargs):
-        raise ProviderError("failed " + sentinel)
+        raise ProviderError("failed " + sentinel, provider="gemini", status_code=503,
+                            category="service_error", retryable=True)
 
     monkeypatch.setattr("code_agent.generation.create_provider", fail)
     assert main(["generate", "--provider", "gemini", "--output", "generated/demo"]) == 4
     captured = capsys.readouterr()
     assert sentinel not in captured.out + captured.err
+    report = json.loads((tmp_path / "generated/demo/.codeagent/generation_report.json").read_text())
+    assert report["error_status_code"] == 503
+    assert report["error_category"] == "service_error"
+    assert report["error_retryable"] is True
+    assert sentinel not in json.dumps(report)
 
 
 def test_help_and_key_not_accepted_as_cli_option(capsys):

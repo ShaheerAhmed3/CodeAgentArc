@@ -102,17 +102,24 @@ class GeminiProvider:
         except ProviderError:
             raise
         except errors.APIError as exc:
-            if exc.code in {401, 403}:
+            status = exc.code if isinstance(exc.code, int) else None
+            if status in {401, 403}:
                 message = "Gemini authentication/permission failure; check GEMINI_API_KEY and access"
-            elif exc.code == 429:
+                category = "authentication"
+            elif status == 429:
                 message = "Gemini rate limit or quota exceeded; wait or check your quota"
-            elif exc.code in {400, 404}:
+                category = "rate_limit"
+            elif status in {400, 404}:
                 message = "Gemini rejected the request; check model availability and request compatibility"
+                category = "invalid_request"
             else:
                 message = "Gemini API request failed; try again later"
-            raise ProviderError(message) from None
+                category = "service_error"
+            raise ProviderError(message, provider="gemini", status_code=status,
+                                category=category, retryable=status in {429, 500, 502, 503, 504}) from None
         except (httpx.HTTPError, OSError):
-            raise ProviderError("Gemini network request failed; check connectivity and try again") from None
+            raise ProviderError("Gemini network request failed; check connectivity and try again",
+                                provider="gemini", category="network", retryable=True) from None
         except Exception:
             raise ProviderError("Gemini request could not be processed") from None
         try:

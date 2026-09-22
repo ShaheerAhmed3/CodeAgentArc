@@ -1,0 +1,45 @@
+{"event": "model_response", "turn": 1, "tool_calls": 1}
+{"event": "tool_call", "turn": 1, "id": "call_Sl0mfCRc2zyQ1qSUbRdTcJT7", "name": "list_files", "directory": "."}
+{"event": "tool_result", "turn": 1, "id": "call_Sl0mfCRc2zyQ1qSUbRdTcJT7", "name": "list_files", "success": true}
+{"event": "model_response", "turn": 2, "tool_calls": 1}
+{"event": "tool_call", "turn": 2, "id": "call_GnK0mquhOMt8jZXGdda64sGC", "name": "list_files", "directory": "services/game-service/src"}
+{"event": "tool_result", "turn": 2, "id": "call_GnK0mquhOMt8jZXGdda64sGC", "name": "list_files", "success": true}
+{"event": "model_response", "turn": 3, "tool_calls": 1}
+{"event": "tool_call", "turn": 3, "id": "call_s5OQqjUZPqhK09kWK0rvr849", "name": "read_file", "path": "services/game-service/src/app.js"}
+{"event": "tool_result", "turn": 3, "id": "call_s5OQqjUZPqhK09kWK0rvr849", "name": "read_file", "success": true}
+{"event": "model_response", "turn": 4, "tool_calls": 1}
+{"event": "tool_call", "turn": 4, "id": "call_g11lRk2ydg7NraFHwdlZUAOC", "name": "list_files", "directory": "services/question-service/src"}
+{"event": "tool_result", "turn": 4, "id": "call_g11lRk2ydg7NraFHwdlZUAOC", "name": "list_files", "success": true}
+{"event": "model_response", "turn": 5, "tool_calls": 1}
+{"event": "tool_call", "turn": 5, "id": "call_13oYXEtVtDDB9Kgx9rKsc2CZ", "name": "read_file", "path": "services/question-service/src/app.js"}
+{"event": "tool_result", "turn": 5, "id": "call_13oYXEtVtDDB9Kgx9rKsc2CZ", "name": "read_file", "success": true}
+{"event": "model_response", "turn": 6, "tool_calls": 1}
+{"event": "tool_call", "turn": 6, "id": "call_lDnJlnANIJaiUAP5GdmFnx20", "name": "list_files", "directory": "services/user-service/src"}
+{"event": "tool_result", "turn": 6, "id": "call_lDnJlnANIJaiUAP5GdmFnx20", "name": "list_files", "success": true}
+{"event": "model_response", "turn": 7, "tool_calls": 1}
+{"event": "tool_call", "turn": 7, "id": "call_5B7L3iYVKBGNpQcnae7Wwcbu", "name": "read_file", "path": "services/user-service/src/app.js"}
+{"event": "tool_result", "turn": 7, "id": "call_5B7L3iYVKBGNpQcnae7Wwcbu", "name": "read_file", "success": true}
+{"event": "model_response", "turn": 8, "tool_calls": 1}
+{"event": "tool_call", "turn": 8, "id": "call_nZ9KWliZdDPNYNuuRAedjgIG", "name": "list_files", "directory": "test"}
+{"event": "tool_result", "turn": 8, "id": "call_nZ9KWliZdDPNYNuuRAedjgIG", "name": "list_files", "success": true}
+{"event": "model_response", "turn": 9, "tool_calls": 1}
+{"event": "tool_call", "turn": 9, "id": "call_FgWElxDeYze4oRBboN2lJHAP", "name": "read_file", "path": "test/app.test.js"}
+{"event": "tool_result", "turn": 9, "id": "call_FgWElxDeYze4oRBboN2lJHAP", "name": "read_file", "success": true}
+{"event": "model_response", "turn": 10, "tool_calls": 1}
+{"event": "tool_call", "turn": 10, "id": "call_kxmEDJMz7jupNyoIWhgGwJhq", "name": "read_file", "path": "package.json"}
+{"event": "tool_result", "turn": 10, "id": "call_kxmEDJMz7jupNyoIWhgGwJhq", "name": "read_file", "success": true}
+{"event": "model_response", "turn": 11, "tool_calls": 1}
+{"event": "tool_call", "turn": 11, "id": "call_J4AxfoJyPXktHelMNTjYml57", "name": "edit_file", "path": "services/game-service/src/app.js", "old_text_characters": 4674, "new_text_characters": 5782}
+{"event": "tool_result", "turn": 11, "id": "call_J4AxfoJyPXktHelMNTjYml57", "name": "edit_file", "success": true}
+{"event": "model_response", "turn": 12, "tool_calls": 1}
+{"event": "tool_call", "turn": 12, "id": "call_ILmIgeyqQfSNH0ZVwoq1RXHT", "name": "edit_file", "path": "services/question-service/src/app.js", "old_text_characters": 2982, "new_text_characters": 2727}
+{"event": "tool_result", "turn": 12, "id": "call_ILmIgeyqQfSNH0ZVwoq1RXHT", "name": "edit_file", "success": true}
+{"event": "model_response", "turn": 13, "tool_calls": 1}
+{"event": "tool_call", "turn": 13, "id": "call_TDSy3gsOcPRY5anyj4zFBqHZ", "name": "read_file", "path": "test/app.test.js"}
+{"event": "tool_result", "turn": 13, "id": "call_TDSy3gsOcPRY5anyj4zFBqHZ", "name": "read_file", "success": true}
+{"event": "model_response", "turn": 14, "tool_calls": 1}
+{"event": "tool_call", "turn": 14, "id": "call_eVH8CTzQ0q97rcjgQcKVRwzO", "name": "edit_file", "path": "test/app.test.js", "old_text_characters": 6471, "new_text_characters": 8340}
+{"event": "tool_result", "turn": 14, "id": "call_eVH8CTzQ0q97rcjgQcKVRwzO", "name": "edit_file", "success": true}
+{"event": "model_response", "turn": 15, "tool_calls": 1}
+{"event": "tool_call", "turn": 15, "id": "call_CwAu0iTHK3BkPMNjMVbJ9VMI", "name": "run_command", "executable": "npm", "argument_count": 1}
+{"event": "tool_result", "turn": 15, "id": "call_CwAu0iTHK3BkPMNjMVbJ9VMI", "name": "run_command", "success": false, "exit_code": 1, "timed_out": false, "stdout_truncated": false, "stderr_truncated": false}

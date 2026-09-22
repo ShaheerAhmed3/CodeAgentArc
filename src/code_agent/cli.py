@@ -5,7 +5,7 @@ from typing import NoReturn
 
 from code_agent.architecture.normalizer import normalize_architecture
 from code_agent.config import ConfigurationError, load_config
-from code_agent.generation import generate
+from code_agent.generation import generate, verify_existing
 
 
 class SafeArgumentParser(argparse.ArgumentParser):
@@ -26,10 +26,23 @@ def main(argv: list[str] | None = None) -> int:
     generation.add_argument("--architecture-doc", type=Path, default=Path("Architecture_Documentation.md"))
     generation.add_argument("--architecture-view", type=Path, default=Path("Architecture_View.md"))
     generation.add_argument("--output", type=Path, required=True)
-    generation.add_argument("--provider", help="gemini or mock (default from environment/.env)")
+    generation.add_argument("--provider", help="gemini, openai, or mock (default from environment/.env)")
     generation.add_argument("--model", help="Model override (no key argument is accepted)")
     generation.add_argument("--max-turns", type=int, default=20)
+    verification = commands.add_parser("verify", help="Recheck final files of a completed generation")
+    verification.add_argument("--output", type=Path, required=True)
+    verification.add_argument("--command", dest="verify_command", nargs=argparse.REMAINDER, required=True,
+                              help="Test/build command and arguments, for example npm test")
     args = parser.parse_args(argv)
+    if args.command == "verify":
+        try:
+            passed = verify_existing(project_root=Path.cwd(), output=args.output, command=args.verify_command)
+        except (ConfigurationError, OSError, ValueError):
+            print("code-agent: Could not verify output; check the generated path and command", file=sys.stderr)
+            return 5
+        print("Final generated repository validation passed." if passed else
+              "Final generated repository validation failed. See .codeagent/generation_report.json.")
+        return 0 if passed else 1
     if args.command == "generate":
         try:
             config = load_config(provider=args.provider, model=args.model)

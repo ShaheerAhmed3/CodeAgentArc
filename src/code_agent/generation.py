@@ -1,6 +1,6 @@
 """One generation workflow composed from the existing provider-neutral runtime."""
 
-from dataclasses import replace
+from dataclasses import asdict, replace
 import json
 import os
 from pathlib import Path
@@ -19,11 +19,12 @@ from code_agent.providers.factory import create_provider
 from code_agent.reporting import redact, report_payload, trace_message
 from code_agent.tools import coding_tools
 from code_agent.tools.command import CommandResult
+from code_agent.tools.command import RunCommandTool
 from code_agent.validation.validator import ValidationCheck, ValidationReport, validate_repository
 from code_agent.workspace.workspace import Workspace
 
 
-def prepare_output(project_root: Path, output: Path) -> Workspace:
+def _resolve_output(project_root: Path, output: Path) -> Path:
     project_root = project_root.resolve()
     generated = project_root / "generated"
     target = output.absolute()
@@ -37,9 +38,68 @@ def prepare_output(project_root: Path, output: Path) -> Workspace:
     resolved = target.resolve()
     if not resolved.is_relative_to(generated) or resolved == generated:
         raise ConfigurationError("Output must stay inside generated/")
+    return resolved
+
+
+def prepare_output(project_root: Path, output: Path) -> Workspace:
+    resolved = _resolve_output(project_root, output)
     if resolved.exists() and (not resolved.is_dir() or any(resolved.iterdir())):
         raise ConfigurationError("Output must be absent or empty; choose a new directory")
     return Workspace(resolved, reserved_names=frozenset({".codeagent"}))
+
+
+def verify_existing(*, project_root: Path, output: Path,
+                    command: list[str]) -> bool:
+    """Independently verify the final files of a completed run, preserving its first result."""
+    resolved = _resolve_output(project_root, output)
+    if (resolved / ".codeagent").is_symlink() or (resolved / ".codeagent").is_junction():
+        raise ConfigurationError("Run artifact directory must not be linked")
+    report_path = resolved / ".codeagent" / "generation_report.json"
+    if not report_path.is_file() or report_path.is_symlink():
+        raise ConfigurationError("Output has no regular generation report")
+    trace_path = resolved / ".codeagent" / "run.jsonl"
+    if not trace_path.is_file() or trace_path.is_symlink() or trace_path.is_junction():
+        raise ConfigurationError("Output has no regular run trace")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if report.get("stop_reason") != "final_response" or report.get("error"):
+        raise ConfigurationError("Only a completed, error-free agent run can be verified")
+    workspace = Workspace(resolved, reserved_names=frozenset({".codeagent"}))
+    environment = {name: value for name, value in os.environ.items()
+                   if not re.search(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL", name, re.IGNORECASE)}
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    result = RunCommandTool(workspace, timeout=120, environment=environment).run(command)
+    validation = validate_repository(workspace, command_results=[result])
+    validation = ValidationReport(validation.checks + (
+        ValidationCheck("final_verification", result.success,
+                        "Independent post-run verification passed" if result.success else
+                        "Independent post-run verification failed"),
+    ), validation.warnings)
+    if "initial_validation" not in report:
+        report["initial_validation"] = report["validation"]
+        report["initial_success"] = report["success"]
+    report["validation"] = {
+        "success": validation.success,
+        "checks": [asdict(check) for check in validation.checks],
+        "errors": validation.errors, "warnings": validation.warnings,
+    }
+    report["verification"] = [{"executable": Path(result.command[0]).name,
+                               "argument_count": len(result.command) - 1,
+                               "exit_code": result.exit_code, "timed_out": result.timed_out,
+                               "success": result.success,
+                               "stdout_truncated": result.stdout_truncated,
+                               "stderr_truncated": result.stderr_truncated}]
+    report["post_run_verification"] = True
+    report["success"] = validation.success
+    temporary = report_path.with_suffix(".json.tmp")
+    with temporary.open("x", encoding="utf-8", newline="\n") as stream:
+        json.dump(report, stream, ensure_ascii=False, indent=2)
+        stream.write("\n")
+    temporary.replace(report_path)
+    with trace_path.open("a", encoding="utf-8", newline="\n") as stream:
+        stream.write(json.dumps({"event": "post_run_verification", "executable": Path(command[0]).name,
+                                 "argument_count": len(command) - 1, "exit_code": result.exit_code,
+                                 "validation_passed": validation.success}) + "\n")
+    return validation.success
 
 
 def _artifact_directory(workspace: Workspace) -> Path:
@@ -78,6 +138,7 @@ def generate(*, architecture_doc: Path, architecture_view: Path, output: Path,
     tools = coding_tools(workspace, command_timeout=120, command_environment=environment)
     provider = None
     error = None
+    provider_failure: ProviderError | None = None
     with (directory / "run.jsonl").open("x", encoding="utf-8", newline="\n") as trace:
         def observe(turn: int, message: Message) -> None:
             nonlocal turns, executed
@@ -104,6 +165,7 @@ def generate(*, architecture_doc: Path, architecture_view: Path, output: Path,
             execution = AgentLoop(provider, tools, max_turns=max_turns).run(initial, observe=observe)
         except ProviderError as exc:
             error = redact(str(exc), config.api_key)
+            provider_failure = exc
             execution = AgentResult(None, tuple(history), turns, "provider_error", executed)
         except Exception:
             error = "Tool/runtime failure; inspect the execution trace and generated files"
@@ -121,7 +183,12 @@ def generate(*, architecture_doc: Path, architecture_view: Path, output: Path,
                             "Final verification evidence recorded" if evidence else
                             "No verification=true command executed after the final file edits"),
         ), validation.warnings)
-        report = GenerationReport(execution, validation, config.provider, config.model, error)
+        report = GenerationReport(
+            execution, validation, config.provider, config.model, error,
+            provider_failure.status_code if provider_failure else None,
+            provider_failure.category if provider_failure else None,
+            provider_failure.retryable if provider_failure else False,
+        )
         trace.write(json.dumps({"event": "run_end", "stop_reason": execution.stop_reason,
                                 "validation_passed": validation.success}) + "\n")
     payload = report_payload(report, evidence, config.api_key)

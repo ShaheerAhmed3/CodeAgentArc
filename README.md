@@ -4,9 +4,9 @@ A Python 3.12 coding agent for a university scholarship assignment: generate a
 repository from architectural documentation and UML views. It implements the
 model/tool/result loop directly, without an agent framework.
 
-Gemini is the included real adapter, using the official google-genai SDK.
-Gemini is not fundamental to the runtime: AgentLoop depends on LLMProvider, and
-a deterministic MockProvider exercises the same pipeline offline.
+Gemini and OpenAI are optional real adapters, using their official Python SDKs.
+Neither provider is fundamental to the runtime: AgentLoop depends on LLMProvider,
+and a deterministic MockProvider exercises the same pipeline offline.
 
 ## Assignment and inputs
 
@@ -38,8 +38,8 @@ inspection before edits, and verification before completion.
 
 ## Setup and offline tests
 
-Run from D:\Downloads\CodeAgentArc in PowerShell. Keep the existing virtual
-environment if already created; the first command is for initial setup only.
+Run from the repository root. Create a new virtual environment on this machine;
+the Windows environment included in the original handoff is not portable.
 
 ~~~powershell
 python3.12 -m venv .venv
@@ -47,7 +47,9 @@ python3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -q
 ~~~
 
-The Python launcher alternative is py -3.12. No activation is required.
+On macOS/Linux, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`.
+Install `.[dev,openai]` for OpenAI, or `.[dev,gemini,openai]` for both providers.
+The Python launcher alternative on Windows is py -3.12. No activation is required.
 Installation needs package access; tests need neither network nor credentials.
 The normal test process blocks network connections, and Gemini tests fake the
 SDK client. Installing without the gemini extra supports normalization/mock use
@@ -55,16 +57,18 @@ and skips SDK-specific tests.
 
 ## Configuration
 
-A local .env is created only if absent, with a blank key. Existing .env files
-are never overwritten. Its safe template is:
+Create a local `.env` from `.env.example` and fill in only the provider key you
+intend to use. The application reads this file but never creates or overwrites it.
+Its safe template is:
 
 ~~~dotenv
 CODE_AGENT_PROVIDER=gemini
 CODE_AGENT_MODEL=gemini-3.8-flash
 GEMINI_API_KEY=
+OPENAI_API_KEY=
 ~~~
 
-Populate the key locally before a live run. Never put it in source or a CLI
+Populate the selected provider's key locally before a live run. Never put it in source or a CLI
 argument. Configuration precedence is CLI provider/model overrides, process
 environment, current-directory .env, then defaults. A blank environment key
 overrides the file too; remove that variable if you want the file's value.
@@ -92,9 +96,14 @@ After manually configuring GEMINI_API_KEY, generate one repository:
 ~~~
 
 The installed code-agent generate entry point accepts the same options.
-Defaults permit the shorter code-agent generate --output generated/space-fractions
-form when running from this project directory. No live Gemini calls or actual
-Space Fractions generation were performed during implementation.
+For OpenAI, set `OPENAI_API_KEY` and use `--provider openai --model gpt-5` in the
+same command. This project's completed example used `--max-turns 40`. CLI
+provider/model flags override the values in `.env`; switching providers without
+an explicit model uses that provider's default rather than the other provider's
+configured model. The default
+OpenAI model is `gpt-5`; choose an account-accessible model explicitly if needed.
+Defaults permit the shorter `code-agent generate --output generated/space-fractions`
+form when running from this project directory.
 
 Output must be an absent or empty project subdirectory under generated/.
 The repository root, generated/ itself, linked paths, and nonempty directories
@@ -108,15 +117,16 @@ the prompt while all sections and PlantUML blocks remain available.
 
 ## Providers and tools
 
-The factory supports gemini and mock. Adding another provider means implementing
+The factory supports gemini, openai, and mock. Adding another provider means implementing
 an adapter and adding a factory branch. No vendor SDK objects enter the loop,
 tools, workspace, or validator.
 
 GeminiProvider sends function declarations and explicitly disables SDK automatic
-function calling. Our loop executes tools. The adapter preserves provider call
-IDs and keeps ordered continuation signatures privately in memory. SDK errors
-become concise application errors without raw response bodies. Each request has
-a 120-second HTTP timeout and one attempt; there is no automatic retry loop.
+function calling. OpenAIProvider uses Responses function calls and sends their
+results back as `function_call_output` items. Our loop executes tools for both.
+Adapters preserve call IDs and private continuation state. SDK errors become
+concise application errors with safe status/category fields in the report, never
+raw response bodies. Each request has a 120-second timeout and no automatic retry.
 
 | Tool | Input and behavior |
 | --- | --- |
@@ -166,6 +176,19 @@ results. A successful arbitrary command is not proof that the application works.
 The prompt asks for genuine tests/builds. finish records claims; validation and
 normal loop completion determine GenerationReport.success.
 
+If the model writes documentation after its last verified test, the initial report
+correctly fails because that evidence is stale. Recheck the final files with:
+
+~~~text
+code-agent verify --output generated/space-fractions --command npm test
+~~~
+
+This runs the command from the generated repository, repeats structural validation,
+and updates the report while preserving `initial_validation` and `initial_success`.
+The trace appends a separate `post_run_verification` event; it does not pretend the
+agent ran another tool call. Commands still run with host privileges, so use only
+trusted generated projects.
+
 Each started run produces:
 
 ~~~text
@@ -207,17 +230,30 @@ src/code_agent/
   reporting.py            redacted JSON/JSONL persistence
   agent/                  neutral models, loop, prompts, GenerationReport
   architecture/           source extraction and normalization
-  providers/              protocol, factory, mock, Gemini adapter
+  providers/              protocol, factory, mock, Gemini/OpenAI adapters
   tools/                  registry and seven concrete tools
   workspace/              filesystem boundary and traversal
   validation/             deterministic checks and ValidationReport
 tests/unit/, tests/integration/
 docs/DESIGN.md             engineering reasoning and references
-generated/                ignored output projects and normalization exports
+generated/space-fractions/  checked-in demonstration output
+generated/                other runs and normalization exports are ignored
 ~~~
 
-Live model behavior and Space Fractions quality remain unverified. Parser
-recognition is tailored to the source conventions. Context compaction, input
+On the handoff machine, a Gemini tool-call smoke test passed, but full generation
+failed before its first turn. On this machine, both a full and a one-line Gemini
+request returned HTTP 503; the new report records this status. The OpenAI adapter's
+live tool-call smoke test passed in two turns. It then generated the checked-in
+Space Fractions example in 34 turns using 33 tool calls. Review found a scoring
+replay bug and a public answer-key route; focused follow-up runs through the same
+AgentLoop repaired the source and added regression tests. The final seven end-to-end
+tests passed repeatedly, and independent post-run validation passed. The
+[generated README](generated/space-fractions/README.md) maps each use case to
+runnable routes and tests. The example exposes HTTP APIs but has no student-facing
+browser UI. Its local token scheme and in-memory persistence are demonstration
+limits, not production security or durability.
+
+Parser recognition is tailored to the source conventions. Context compaction, input
 token budgets, resumable runs, --spec import, and process isolation are deferred.
 There is no multi-agent orchestration, database, server, or agent framework.
 See [DESIGN.md](docs/DESIGN.md) for the dependency boundaries and research.

@@ -1,0 +1,14 @@
+{
+  "name": "space-fractions-repo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Space Fractions microservices demo per architecture",
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}

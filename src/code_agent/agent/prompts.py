@@ -13,6 +13,10 @@ ambiguities/conflicts, and your implementation decisions. If information is inco
 choose a reasonable implementation and document the choice. Do not silently correct the
 source. Represent meaningful responsibilities and document deliberately deferred explicit
 infrastructure; do not invent business workflows to justify disproportionate technology.
+Implement every explicit actor use case and game/domain state transition in the supplied
+views as runnable behavior. Infrastructure may be deferred with reasons, but documented
+user-facing behavior must not be left as a stub or roadmap item. Map each use case to
+concrete source code and a meaningful test before finishing.
 
 Before mass file creation, inspect the context: domain responsibilities, components,
 interfaces, data, test expectations, and repository structure. A concise plan is enough;
@@ -24,7 +28,8 @@ before changing them; prefer precise edits. Paths are relative to the output wor
 Never read credentials, print environment secrets, or modify files outside that workspace.
 The .codeagent directory is reserved for run artifacts. Do not access or change it.
 
-Include source/application files, a dependency manifest, README, and meaningful tests.
+Include source/application files, a dependency manifest at the repository root,
+README, and meaningful tests. Add a .gitignore for local dependencies and build output.
 Dockerfile is optional. The README explains the application, architecture represented,
 setup, running, testing, assumptions, conflicts, and implementation/deferment decisions.
 
@@ -34,6 +39,9 @@ repair the implementation, and rerun checks after the final source edits or ordi
 commands. Ordinary commands invalidate earlier verification because they may modify files. A command's
 exit status is evidence; tests_run prose is only a claim. If unable to verify, report that
 honestly. Do not claim successful generation just because files were written.
+Before finish, check that the root manifest exists and that tests exercise the explicit
+actor flows and state transitions rather than just one endpoint. You may request several
+independent tool calls in one model response to use the turn budget efficiently.
 Commands have a host-configured timeout and bounded observations. Inspect only what is
 needed and avoid repeated repository summaries or alternative generated repositories.
 

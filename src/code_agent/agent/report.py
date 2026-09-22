@@ -13,6 +13,9 @@ class GenerationReport:
     provider: str = ""
     model: str = ""
     error: str | None = None
+    error_status_code: int | None = None
+    error_category: str | None = None
+    error_retryable: bool = False
 
     @property
     def success(self) -> bool:

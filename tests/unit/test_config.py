@@ -46,6 +46,19 @@ def test_unknown_provider_does_not_echo_configuration():
     assert "secret-sentinel" not in str(caught.value)
 
 
+def test_openai_config_and_factory(monkeypatch, tmp_path):
+    config = load_config(env_file=tmp_path / "absent", environ={"OPENAI_API_KEY": "offline-key",
+                         "CODE_AGENT_PROVIDER": "gemini", "CODE_AGENT_MODEL": "gemini-3.8-flash"},
+                         provider="openai")
+    assert config.model == "gpt-5"
+    assert config.api_key == "offline-key"
+    sentinel = object()
+    monkeypatch.setattr("code_agent.providers.openai.OpenAIProvider", lambda **kwargs: sentinel)
+    assert create_provider(config) is sentinel
+    with pytest.raises(ConfigurationError, match="OPENAI_API_KEY"):
+        load_config(env_file=tmp_path / "absent", environ={}, provider="openai")
+
+
 def test_gemini_selection_uses_adapter_only_at_factory(monkeypatch):
     pytest.importorskip("google.genai")
     captured = {}

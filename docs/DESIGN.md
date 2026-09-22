@@ -31,7 +31,7 @@ not the full product's orchestration, persistence, or permission systems.
 Python 3.12 provides dataclasses, protocols, JSON, regular expressions, and
 filesystem APIs without runtime dependencies. This keeps the core inspectable
 and makes offline tests straightforward. python-dotenv handles development
-configuration; google-genai is an optional provider dependency. pytest is limited
+configuration; google-genai and openai are optional provider dependencies. pytest is limited
 to development.
 
 `architecture` extracts source information deterministically before model use.
@@ -187,10 +187,11 @@ coordination and agent frameworks would add lifecycle and dependency complexity
 without helping this stage. No async pipeline, plugin discovery, service layer,
 queue, database, or container system is required.
 
-## Gemini translation boundary
+## Provider translation boundaries
 
 The dependency direction remains AgentLoop -> LLMProvider. GeminiProvider alone
-imports Google SDK classes; the factory selects mock or gemini without plugin
+imports Google SDK classes; OpenAIProvider alone imports OpenAI SDK classes. The
+factory selects mock, gemini, or openai without plugin
 discovery. The SDK is optional. Its client is initialized with an explicit key,
 a 120-second HTTP timeout, and one attempt (SDK retries disabled). Unknown providers,
 missing keys, and unavailable adapters fail clearly without exposing configuration.
@@ -213,7 +214,8 @@ values. Thought-marked text is excluded from public responses and thought summar
 are disabled in the request.
 
 Authentication, quota, network, request, and malformed-response failures become
-ProviderError with controlled messages. Raw SDK exceptions can contain request
+ProviderError with controlled messages and safe status/category/retryability
+metadata. Raw SDK exceptions can contain request
 data and are never forwarded. Blocked/truncated responses fail before tool dispatch;
 an empty response is not interpreted as success. Tests use actual SDK value types
 with a fake client, including signature round trips, without live requests.
@@ -225,8 +227,16 @@ Implementation references reviewed for this adapter:
 - [Gemini function calling](https://ai.google.dev/gemini-api/docs/function-calling)
   supplies the request/call/result protocol context.
 - [Google model catalog](https://ai.google.dev/gemini-api/docs/models)
-  lists gemini-3.8-flash, retained as the requested default. Account access is
-  not established by a catalog entry and has not been tested here.
+  lists gemini-3.8-flash, retained as the requested default. A model catalog
+  entry does not establish account access or service health.
+
+OpenAIProvider uses the Responses API with non-strict function declarations to
+match the tools' optional arguments. It replays provider output items privately,
+including encrypted reasoning continuation when present, and sends correlated
+`function_call_output` observations after AgentLoop dispatches the tool. Requests
+are stateless (`store=false`), with SDK retries disabled and a 120-second timeout.
+Only public text and neutral tool calls leave the adapter. The protocol follows
+the [official OpenAI function calling guide](https://developers.openai.com/api/docs/guides/function-calling).
 
 The earlier Claude Code references motivate the iterative inspect/action/verify
 mechanism. The explicit tool registry, filesystem/command separation, provider
@@ -268,6 +278,14 @@ as permanent failure. It cannot determine whether a chosen command is a meaningf
 test, nor detect all mutations performed inside a marked verification command.
 These are explicit limits of structural and exit-status validation.
 
+If a final documentation write invalidates the agent's last command evidence,
+`code-agent verify` can rerun an explicit test/build command against the final
+repository. It stores the initial outcome separately in the report, marks the
+new evidence as independent post-run verification, and appends a distinct trace
+event. It neither resumes the model nor attributes the later command to the
+AgentLoop. The resulting success still requires a completed agent turn and all
+deterministic checks to pass.
+
 Generated subprocesses disable Python bytecode writes to avoid timestamp-cache reuse
 after rapid same-size repairs. Other language build-cache semantics remain the generated
 project's responsibility. The core validator remains usable independently with optional
@@ -282,9 +300,23 @@ security claim is made for arbitrary commands reading secrets elsewhere on the h
 ## Remaining limitations
 
 The full pipeline is tested offline, including write/read/test/repair/finish and failure
-outcomes. Real Gemini availability, quota behavior, and Space Fractions quality remain
-untested until the user configures the key and initiates a live run. No live calls were
-made during implementation. Normalized JSON import, resume/checkpoint support, context
+outcomes. The handoff's small Gemini tool loop succeeded, but the first full
+attempt failed. On this machine, a full request and a one-line request both
+returned HTTP 503 before any agent turn. The report now records safe error
+metadata without exposing the SDK body. OpenAI's live tool-call round trip passed.
+The OpenAI agent then produced a runnable Space Fractions repository with three
+services and five passing integration tests. Its initial structural validation
+failed after a final README write invalidated earlier test evidence. The explicit
+`verify` command reran those tests against final files, preserved the initial
+result, and recorded independent post-run validation as successful. Review found
+scoring replay and answer-key exposure, which focused AgentLoop runs repaired.
+The agent added two regression tests; seven tests now pass repeatedly. One
+follow-up model request failed with a service error after the code changes, so
+independent post-run verification supplies the final evidence. The resulting
+application documents in-memory persistence and placeholder authentication as
+demonstration limits; it has no student-facing browser UI and is not production
+ready. Normalized JSON import,
+resume/checkpoint support, context
 compaction, token budgets, and OS process isolation remain deferred. Turn limits and
 HTTP/command timeouts do not bound total token spending or the number of calls in one
 response. Prompt separation is not a complete defense against malicious source text.

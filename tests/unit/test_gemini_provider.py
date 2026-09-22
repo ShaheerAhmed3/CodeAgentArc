@@ -127,6 +127,9 @@ def test_api_errors_are_safe_and_not_retried(status, fragment):
         provider(client).complete([], [])
     assert sentinel not in str(caught.value)
     assert len(client.requests) == 1
+    assert caught.value.provider == "gemini"
+    assert caught.value.status_code == status
+    assert caught.value.retryable is (status in {429, 503})
 
 
 def test_network_and_sdk_errors_do_not_expose_original_message():
