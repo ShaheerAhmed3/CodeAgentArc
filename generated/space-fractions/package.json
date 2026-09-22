@@ -2,7 +2,7 @@
   "name": "space-fractions-repo",
   "private": true,
   "version": "1.0.0",
-  "description": "Space Fractions microservices demo per architecture",
+  "description": "Space Fractions microservices demo",
   "workspaces": [
     "services/*"
   ],

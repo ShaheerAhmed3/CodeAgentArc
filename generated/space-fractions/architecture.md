@@ -1,4 +1,4 @@
-This file extracts and preserves key architectural artifacts from the provided documentation.
+This file summarizes the architectural inputs used for the runnable example.
 
 - Architectural style: Microservices
 - Components: GameComponent, QuestionComponent, UserComponent

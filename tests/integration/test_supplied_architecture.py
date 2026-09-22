@@ -19,7 +19,7 @@ SOURCE_HASHES = {
 }
 
 
-def test_professor_sources_are_byte_identical(project_root):
+def test_reference_inputs_are_byte_identical(project_root):
     for filename, expected in SOURCE_HASHES.items():
         assert hashlib.sha256((project_root / filename).read_bytes()).hexdigest() == expected
 

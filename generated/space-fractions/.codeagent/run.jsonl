@@ -101,3 +101,5 @@
 {"event": "run_end", "stop_reason": "final_response", "validation_passed": false}
 {"event": "post_run_verification", "executable": "npm", "argument_count": 1, "exit_code": 0, "validation_passed": true}
 {"event": "post_run_verification", "executable": "npm", "argument_count": 1, "exit_code": 0, "validation_passed": true}
+{"event": "post_run_verification", "executable": "npm", "argument_count": 1, "exit_code": 1, "validation_passed": false}
+{"event": "post_run_verification", "executable": "npm", "argument_count": 1, "exit_code": 0, "validation_passed": true}

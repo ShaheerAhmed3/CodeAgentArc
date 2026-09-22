@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Space Fractions API
-  description: API for the Space Fractions game (minimal excerpt per architecture)
+  description: API for the runnable Space Fractions game
   version: 1.0.0
 paths:
   /play:
@@ -16,5 +16,6 @@ paths:
                 type: object
                 properties:
                   gameId:
-                    type: integer
+                    type: string
+                    format: uuid
                     description: Game ID

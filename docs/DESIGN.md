@@ -7,7 +7,7 @@ an action, execute tools, append observations, and ask again. This lets a future
 coding agent inspect existing files and react to failing tests. A one-shot text
 generation script cannot observe the repository or verify that its code works.
 
-The assignment's three research links were reviewed on 2026-09-21:
+The following references were reviewed on 2026-09-21:
 
 - [Anthropic's Claude Code repository](https://github.com/anthropics/claude-code)
   is the official public project entry point. Its presence on GitHub is not
@@ -137,7 +137,7 @@ language-neutral and does not hard-code pytest or Node.js.
 
 `finish` records `CompletionInfo` (summary, claimed tests, assumptions, warnings)
 without stopping the loop specially. Its observation asks for a final response.
-This preserves the original completion contract and handles a turn containing
+This preserves the completion contract and handles a turn containing
 multiple calls normally. The latest recorded completion is available from
 AgentResult; it is a model declaration, not proof of successful verification.
 Tool-call count records dispatches during this run, including error observations;
@@ -148,11 +148,11 @@ prior input history is not counted.
 Tests exercise exact source preservation, topic extraction, repeated UML
 captions, deterministic JSON, path traversal and escaping links, tool errors,
 conversation ordering, multiple turns, turn exhaustion, and mock isolation.
-Integration tests retain the original normalization/prompt checks and now exercise
+Integration tests cover normalization and prompts, then exercise
 real write/read/command/finish tools through MockProvider. One script produces
 a tiny Python repository and runs its unittest suite offline. Command tests cover
 exit status, cwd, literal arguments, truncation, and timeout output. SHA-256
-checks continue to guard all three professor originals.
+checks guard all three archived reference inputs against accidental changes.
 
 A no-tool response only means the model stopped requesting actions. The caller
 runs `validate_repository` after the loop regardless of final claims. Validation
@@ -163,7 +163,7 @@ heuristic, configurable through `ValidationPolicy`; it does not prove the files
 are executable or semantically correct. Empty package initializers are excluded
 from source/test candidates. All recognized source/test files and present
 README/manifest candidates must be nonempty. An empty test directory produces
-a warning rather than failing the assignment's directory-presence check.
+a warning rather than failing the directory-presence check.
 
 Common build/dependency/cache directories and linked entries do not supply
 validation artifacts. An inventory error or entry-limit overflow fails validation
@@ -300,8 +300,8 @@ security claim is made for arbitrary commands reading secrets elsewhere on the h
 ## Remaining limitations
 
 The full pipeline is tested offline, including write/read/test/repair/finish and failure
-outcomes. The handoff's small Gemini tool loop succeeded, but the first full
-attempt failed. On this machine, a full request and a one-line request both
+outcomes. An early Gemini tool loop succeeded, but the first full
+attempt failed. Later, a full request and a one-line request both
 returned HTTP 503 before any agent turn. The report now records safe error
 metadata without exposing the SDK body. OpenAI's live tool-call round trip passed.
 The OpenAI agent then produced a runnable Space Fractions repository with three

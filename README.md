@@ -1,18 +1,19 @@
 # CodeAgentArc
 
-A Python 3.12 coding agent for a university scholarship assignment: generate a
-repository from architectural documentation and UML views. It implements the
-model/tool/result loop directly, without an agent framework.
+A Python 3.12 coding agent that turns architecture documentation and UML views
+into a runnable repository. It reads the source material, writes files, runs
+checks, and revises its work through an explicit model/tool/result loop.
 
 Gemini and OpenAI are optional real adapters, using their official Python SDKs.
 Neither provider is fundamental to the runtime: AgentLoop depends on LLMProvider,
 and a deterministic MockProvider exercises the same pipeline offline.
 
-## Assignment and inputs
+## Inputs and example project
 
-The professor-provided Task1-EN.docx, Architecture_Documentation.md, and
-Architecture_View.md remain unchanged; tests pin their SHA-256 hashes.
-The DOCX defines the assignment. The Markdown inputs describe Space Fractions.
+`Architecture_Documentation.md` and `Architecture_View.md` describe Space
+Fractions, the example application in this repository. `Task1-EN.docx` is kept
+as an archived project brief; it is not read by the generator. Tests pin the
+SHA-256 hashes of these reference files so the example remains reproducible.
 
 Normalization extracts project information, components, technology/contracts,
 schemas, deployment/security/testing information, assumptions, documentation
@@ -38,18 +39,17 @@ inspection before edits, and verification before completion.
 
 ## Setup and offline tests
 
-Run from the repository root. Create a new virtual environment on this machine;
-the Windows environment included in the original handoff is not portable.
+Run from the repository root. Create a virtual environment for your platform.
 
-~~~powershell
+~~~sh
 python3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev,gemini]"
-.\.venv\Scripts\python.exe -m pytest -q
+.venv/bin/python -m pip install -e ".[dev,openai]"
+.venv/bin/python -m pytest -q
 ~~~
 
-On macOS/Linux, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`.
-Install `.[dev,openai]` for OpenAI, or `.[dev,gemini,openai]` for both providers.
-The Python launcher alternative on Windows is py -3.12. No activation is required.
+On Windows, use `py -3.12 -m venv .venv` and
+`.venv\Scripts\python.exe` in the following commands. Install `.[dev,gemini]`
+for Gemini, or `.[dev,gemini,openai]` for both providers. No activation is required.
 Installation needs package access; tests need neither network nor credentials.
 The normal test process blocks network connections, and Gemini tests fake the
 SDK client. Installing without the gemini extra supports normalization/mock use
@@ -82,22 +82,22 @@ or trace configuration. The included .env.example contains only placeholders.
 
 Export normalized JSON to a new filename:
 
-~~~powershell
-.\.venv\Scripts\code-agent.exe normalize --output generated/architecture.json
+~~~sh
+.venv/bin/python -m code_agent.cli normalize --output generated/architecture.json
 ~~~
 
 Existing output files are refused. Choose another filename if this export
 already exists. Without --output, JSON is written to stdout.
 
-After manually configuring GEMINI_API_KEY, generate one repository:
+After configuring `OPENAI_API_KEY` locally, generate one repository:
 
-~~~powershell
-.\.venv\Scripts\python.exe -m code_agent.cli generate --architecture-doc Architecture_Documentation.md --architecture-view Architecture_View.md --output generated/space-fractions --provider gemini --model gemini-3.8-flash --max-turns 20
+~~~sh
+.venv/bin/python -m code_agent.cli generate --architecture-doc Architecture_Documentation.md --architecture-view Architecture_View.md --output generated/space-fractions-2 --provider openai --model gpt-5 --max-turns 40
 ~~~
 
-The installed code-agent generate entry point accepts the same options.
-For OpenAI, set `OPENAI_API_KEY` and use `--provider openai --model gpt-5` in the
-same command. This project's completed example used `--max-turns 40`. CLI
+The installed `code-agent generate` entry point accepts the same options.
+For Gemini, set `GEMINI_API_KEY` and use `--provider gemini --model gemini-3.8-flash`.
+The checked-in example used `--max-turns 40`. CLI
 provider/model flags override the values in `.env`; switching providers without
 an explicit model uses that provider's default rather than the other provider's
 configured model. The default
@@ -240,16 +240,13 @@ generated/space-fractions/  checked-in demonstration output
 generated/                other runs and normalization exports are ignored
 ~~~
 
-On the handoff machine, a Gemini tool-call smoke test passed, but full generation
-failed before its first turn. On this machine, both a full and a one-line Gemini
-request returned HTTP 503; the new report records this status. The OpenAI adapter's
-live tool-call smoke test passed in two turns. It then generated the checked-in
-Space Fractions example in 34 turns using 33 tool calls. Review found a scoring
-replay bug and a public answer-key route; focused follow-up runs through the same
-AgentLoop repaired the source and added regression tests. The final seven end-to-end
-tests passed repeatedly, and independent post-run validation passed. The
+The checked-in Space Fractions example was generated with the OpenAI adapter in
+34 turns and 33 tool calls. Review found a scoring replay bug and an exposed
+answer-key route; follow-up runs through the same loop repaired the code and
+added regression tests. Seven integration tests and independent final validation
+passed. The
 [generated README](generated/space-fractions/README.md) maps each use case to
-runnable routes and tests. The example exposes HTTP APIs but has no student-facing
+runnable routes and tests. The example exposes HTTP APIs but has no
 browser UI. Its local token scheme and in-memory persistence are demonstration
 limits, not production security or durability.
 
