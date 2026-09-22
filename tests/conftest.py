@@ -24,9 +24,10 @@ def project_root() -> Path:
 
 @pytest.fixture(scope="session")
 def architecture(project_root):
+    inputs = project_root / "architecture" / "inputs"
     return normalize_architecture(
-        project_root / "Architecture_Documentation.md",
-        project_root / "Architecture_View.md",
+        inputs / "Architecture_Documentation.md",
+        inputs / "Architecture_View.md",
     )
 
 

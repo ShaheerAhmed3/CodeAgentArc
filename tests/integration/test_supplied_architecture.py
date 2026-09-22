@@ -18,9 +18,13 @@ SOURCE_HASHES = {
 }
 
 
+def input_path(project_root, filename):
+    return project_root / "architecture" / "inputs" / filename
+
+
 def test_reference_inputs_are_byte_identical(project_root):
     for filename, expected in SOURCE_HASHES.items():
-        assert hashlib.sha256((project_root / filename).read_bytes()).hexdigest() == expected
+        assert hashlib.sha256(input_path(project_root, filename).read_bytes()).hexdigest() == expected
 
 
 def test_supplied_documentation_is_preserved_and_categorized(architecture):
@@ -51,7 +55,7 @@ def test_supplied_documentation_is_preserved_and_categorized(architecture):
 
 
 def test_all_supplied_plantuml_blocks_are_exact(project_root, architecture):
-    source = (project_root / "Architecture_View.md").read_bytes().decode("utf-8")
+    source = input_path(project_root, "Architecture_View.md").read_bytes().decode("utf-8")
     expected = re.findall(r"```plantuml\r?\n(.*?)```", source, re.DOTALL)
     assert len(expected) == len(architecture.architectural_views) == 13
     assert [v.plantuml_source for v in architecture.architectural_views] == expected
@@ -64,22 +68,26 @@ def test_all_supplied_plantuml_blocks_are_exact(project_root, architecture):
 
 
 def test_json_is_repeatable_and_contains_source_provenance(project_root, architecture):
-    repeated = normalize_architecture(project_root / "Architecture_Documentation.md", project_root / "Architecture_View.md")
+    repeated = normalize_architecture(
+        input_path(project_root, "Architecture_Documentation.md"),
+        input_path(project_root, "Architecture_View.md"),
+    )
     assert architecture.to_json() == repeated.to_json()
     decoded = json.loads(architecture.to_json())
     assert decoded["schema_version"] == "1.0"
     for source in decoded["sources"]:
-        assert source["text"].encode("utf-8") == (project_root / source["filename"]).read_bytes()
+        assert source["text"].encode("utf-8") == input_path(project_root, source["filename"]).read_bytes()
         assert source["sha256"] == SOURCE_HASHES[source["filename"]]
 
 
 def test_cli_writes_json_and_refuses_source_overwrite(project_root, tmp_path, capsys):
-    inputs = ["normalize", "--documentation", str(project_root / "Architecture_Documentation.md"), "--views", str(project_root / "Architecture_View.md")]
+    inputs = ["normalize", "--documentation", str(input_path(project_root, "Architecture_Documentation.md")),
+              "--views", str(input_path(project_root, "Architecture_View.md"))]
     target = tmp_path / "architecture.json"
     assert main(inputs + ["--output", str(target)]) == 0
     assert json.loads(target.read_text(encoding="utf-8"))["project_name"] == "Space Fractions"
     for original in SOURCE_HASHES:
-        assert main(inputs + ["--output", str(project_root / original)]) == 1
+        assert main(inputs + ["--output", str(input_path(project_root, original))]) == 1
     assert "code-agent:" in capsys.readouterr().err
 
 

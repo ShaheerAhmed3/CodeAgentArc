@@ -10,10 +10,10 @@ and a deterministic MockProvider exercises the same pipeline offline.
 
 ## Inputs and example project
 
-`Architecture_Documentation.md` and `Architecture_View.md` describe Space
-Fractions, the example application in this repository. These are the generator's
-two input files. Tests pin their SHA-256 hashes so the example remains
-reproducible.
+`architecture/inputs/Architecture_Documentation.md` and
+`architecture/inputs/Architecture_View.md` describe Space Fractions, the
+example application in this repository. These are the generator's two input
+files. Tests pin their SHA-256 hashes so the example remains reproducible.
 
 Normalization extracts project information, components, technology/contracts,
 schemas, deployment/security/testing information, assumptions, documentation
@@ -92,7 +92,7 @@ already exists. Without --output, JSON is written to stdout.
 After configuring `OPENAI_API_KEY` locally, generate one repository:
 
 ~~~sh
-.venv/bin/python -m code_agent.cli generate --architecture-doc Architecture_Documentation.md --architecture-view Architecture_View.md --output generated/space-fractions-2 --provider openai --model gpt-5 --max-turns 40
+.venv/bin/python -m code_agent.cli generate --output generated/space-fractions-2 --provider openai --model gpt-5 --max-turns 40
 ~~~
 
 The installed `code-agent generate` entry point accepts the same options.
@@ -234,6 +234,7 @@ src/code_agent/
   tools/                  registry and seven concrete tools
   workspace/              filesystem boundary and traversal
   validation/             deterministic checks and ValidationReport
+architecture/inputs/      versioned architecture source documents
 tests/unit/, tests/integration/
 docs/DESIGN.md             engineering reasoning and references
 generated/space-fractions/  checked-in demonstration output

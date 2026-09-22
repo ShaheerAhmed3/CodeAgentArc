@@ -5,8 +5,10 @@ from code_agent.cli import main
 
 
 def setup_inputs(tmp_path):
-    (tmp_path / "Architecture_Documentation.md").write_text("# Summary\nExample", encoding="utf-8")
-    (tmp_path / "Architecture_View.md").write_text("", encoding="utf-8")
+    inputs = tmp_path / "architecture" / "inputs"
+    inputs.mkdir(parents=True)
+    (inputs / "Architecture_Documentation.md").write_text("# Summary\nExample", encoding="utf-8")
+    (inputs / "Architecture_View.md").write_text("", encoding="utf-8")
 
 
 def test_generate_requires_output_and_positive_turn_count(tmp_path, monkeypatch):
