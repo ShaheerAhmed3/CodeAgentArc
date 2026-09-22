@@ -13,7 +13,6 @@ from code_agent.workspace.workspace import Workspace
 
 
 SOURCE_HASHES = {
-    "Task1-EN.docx": "ba0a30f8826823a533835dff27a8dfbd7ca290675f7b3b7a022d78534e03db90",
     "Architecture_Documentation.md": "111282df7817bca771e53c82ebb053707a3217cb8f11733a2c25b631ca81db55",
     "Architecture_View.md": "77dac057e13f122ddc6fc19294490c6a961f00429b72f15df81a81adc91bdbc8",
 }

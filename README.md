@@ -11,9 +11,9 @@ and a deterministic MockProvider exercises the same pipeline offline.
 ## Inputs and example project
 
 `Architecture_Documentation.md` and `Architecture_View.md` describe Space
-Fractions, the example application in this repository. `Task1-EN.docx` is kept
-as an archived project brief; it is not read by the generator. Tests pin the
-SHA-256 hashes of these reference files so the example remains reproducible.
+Fractions, the example application in this repository. These are the generator's
+two input files. Tests pin their SHA-256 hashes so the example remains
+reproducible.
 
 Normalization extracts project information, components, technology/contracts,
 schemas, deployment/security/testing information, assumptions, documentation

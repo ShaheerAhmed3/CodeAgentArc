@@ -6,6 +6,8 @@ __pycache__/
 build/
 dist/
 .env
+.DS_Store
+Task1-EN.docx
 generated/*
 !generated/.gitkeep
 !generated/space-fractions/

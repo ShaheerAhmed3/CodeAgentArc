@@ -152,7 +152,7 @@ Integration tests cover normalization and prompts, then exercise
 real write/read/command/finish tools through MockProvider. One script produces
 a tiny Python repository and runs its unittest suite offline. Command tests cover
 exit status, cwd, literal arguments, truncation, and timeout output. SHA-256
-checks guard all three archived reference inputs against accidental changes.
+checks guard the two architecture inputs against accidental changes.
 
 A no-tool response only means the model stopped requesting actions. The caller
 runs `validate_repository` after the loop regardless of final claims. Validation
