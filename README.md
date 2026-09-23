@@ -4,6 +4,96 @@ A Python 3.12 coding agent that turns architecture documentation and UML views
 into a runnable repository. It reads the source material, writes files, runs
 checks, and revises its work through an explicit model/tool/result loop.
 
+## Quick Start
+
+### 1. Run the Code Agent
+
+Prerequisites: Git and Python 3.12 or newer with Tkinter available. The agent
+itself is cross-platform; a live generation also needs an OpenAI or Gemini API
+key. Clone and enter the repository:
+
+~~~sh
+git clone https://github.com/ShaheerAhmed3/CodeAgentArc.git
+cd CodeAgentArc
+~~~
+
+On macOS/Linux, create the environment and install the OpenAI-enabled agent:
+
+~~~sh
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev,openai]'
+cp .env.example .env
+~~~
+
+On Windows PowerShell:
+
+~~~powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev,openai]"
+Copy-Item .env.example .env
+~~~
+
+Edit `.env` and set `OPENAI_API_KEY` to your key. Do not commit `.env`. To use
+Gemini instead, install `.[dev,gemini]`, set `GEMINI_API_KEY`, and select the
+Gemini provider.
+
+Normalize the supplied architecture inputs (optional, useful for inspection),
+then generate a fresh desktop-game repository:
+
+~~~sh
+python -m code_agent.cli normalize --output generated/architecture.json
+python -m code_agent.cli generate --output generated/space-fractions-run --provider openai --model gpt-5 --max-turns 40
+~~~
+
+The generation command consumes
+`architecture/inputs/Architecture_Documentation.md` and
+`architecture/inputs/Architecture_View.md` by default. Output directories must
+be absent or empty, so choose a new name for each run. A successful run ends
+with deterministic desktop-game validation and writes details under
+`generated/space-fractions-run/.codeagent/`.
+
+### 2. Run the Generated Game
+
+For the fresh output created above:
+
+~~~sh
+cd generated/space-fractions-run
+python main.py
+~~~
+
+The game opens as a local desktop window; no browser or server is required. The
+checked-in generated example can be launched directly from the repository root:
+
+~~~sh
+cd generated/space-fractions
+python main.py
+~~~
+
+If `import tkinter` fails, install the Tk support package matching your Python
+distribution, then rerun the same command. On Debian/Ubuntu this is commonly
+`python3-tk`; the standard Windows python.org installer includes Tcl/Tk.
+
+### 3. Run Tests
+
+Run the Code Agent test suite from the repository root with its virtual
+environment activated:
+
+~~~sh
+python -m pytest -q
+~~~
+
+Run the checked-in generated game's headless domain tests separately:
+
+~~~sh
+cd generated/space-fractions
+python -m pip install -r requirements.txt
+python -m pytest -q
+~~~
+
 Gemini and OpenAI are optional real adapters, using their official Python SDKs.
 Neither provider is fundamental to the runtime: AgentLoop depends on LLMProvider,
 and a deterministic MockProvider exercises the same pipeline offline.
@@ -35,14 +125,14 @@ This is an iterative agent: it can read real files, observe test failures, edit
 the implementation, and rerun checks. It does not ask the model to return a
 repository as one giant Markdown response. The generation prompt requires
 source fidelity, a coherent minimum implementation, documented decisions,
-inspection before edits, and verification before completion. When an input
-describes a web interface, screen, menu, scene, or visual user flow, the prompt
-requires a connected browser UI; backend endpoints alone do not count as the
-finished user experience.
+inspection before edits, and verification before completion. For this evaluation,
+the explicit desktop constraint overrides incompatible web deployment suggestions
+in the source: the generated game must be a local GUI, preferably Python/Tkinter,
+and backend-only or browser-only outputs fail validation.
 
 ## Setup and offline tests
 
-Prerequisites are Python 3.12 or newer, Git, and Node.js 18 or newer. Run the
+Prerequisites are Python 3.12 or newer with Tkinter, and Git. Run the
 commands from the repository root.
 
 ### macOS
@@ -139,34 +229,31 @@ the prompt while all sections and PlantUML blocks remain available.
 
 ## Run the checked-in Space Fractions example
 
-The generated example uses Node.js and includes a browser game. It starts all
-three services from one command.
+The generated example uses Python and Tkinter. Its domain and question logic are
+separate from the GUI, so tests run without opening a window.
 
 ### macOS
 
 ~~~sh
 cd generated/space-fractions
-npm install
-npm test
-npm start
+python -m pip install -r requirements.txt
+python -m pytest -q
+python main.py
 ~~~
 
 ### Windows PowerShell
 
 ~~~powershell
 cd generated/space-fractions
-npm install
-npm test
-npm start
+python -m pip install -r requirements.txt
+python -m pytest -q
+python main.py
 ~~~
 
-The five Jest tests start the services on temporary ports and cover the API,
-state transitions, admin updates, score protection, and the browser flow.
-After `npm start`, open [http://localhost:3000](http://localhost:3000).
-The Game service and UI use port 3000, Question uses 3001, and User uses 3002.
-Press `Control+C` in the terminal to stop all three. See the
-[Space Fractions README](generated/space-fractions/README.md) for gameplay,
-admin usage, architecture decisions, and production limitations.
+The tests cover fraction-question selection, answer validation, scoring,
+progression, and game completion. See the
+[Space Fractions README](generated/space-fractions/README.md) for gameplay and
+the mapping from the web-oriented source architecture to the local desktop runtime.
 
 ## Providers and tools
 
@@ -213,9 +300,11 @@ defend against hard links or concurrent directory replacement. Use trusted work.
 
 Validation checks repository contents, README, an accepted dependency manifest,
 recognized application source, tests or a test directory, and nonempty required
-files. Docker is optional. ValidationPolicy customizes names, extensions, patterns,
-extra required files, and inventory limits. Empty package initializers are allowed.
-An empty test directory satisfies the structural requirement but produces a warning.
+files. Generation and post-run verification additionally require evidence of a
+local desktop GUI framework, a documented executable entry point, no browser or
+localhost launch dependency, core game-flow behavior, exact launch/test commands,
+and non-interactive domain tests. `ValidationPolicy` keeps those desktop checks
+optional for independent generic uses of the validator. Docker is optional.
 
 Generation additionally requires actual run_command evidence marked
 verification=true after the last write/edit attempt or ordinary command.
@@ -224,16 +313,16 @@ Repeating the identical verification argument list replaces its previous result;
 all distinct final checks must pass. Intermediate failures remain in the trace.
 Python subprocesses disable bytecode writes to avoid stale imports during repairs.
 
-The validator does not judge test quality, parse manifests, or authenticate command
-results. A successful arbitrary command is not proof that the application works.
-The prompt asks for genuine tests/builds. finish records claims; validation and
-normal loop completion determine GenerationReport.success.
+The validator uses bounded source and documentation heuristics; it does not prove
+UI quality, fully interpret code, parse manifests, or authenticate command results.
+The prompt asks for genuine domain tests and a safe import/compile check. `finish`
+records claims; validation and normal loop completion determine `GenerationReport.success`.
 
 If the model writes documentation after its last verified test, the initial report
 correctly fails because that evidence is stale. Recheck the final files with:
 
 ~~~text
-code-agent verify --output generated/space-fractions --command npm test
+code-agent verify --output generated/space-fractions --command python -m pytest -q
 ~~~
 
 This runs the command from the generated repository, repeats structural validation,
@@ -295,15 +384,15 @@ generated/                other runs and normalization exports are ignored
 ~~~
 
 The checked-in Space Fractions example was freshly generated with the OpenAI
-adapter after browser UI requirements were added to the prompt. It completed in
-57 turns with 56 tool calls. It includes an animated intro, main menu, playable
-question flow, pause/resume controls, score and help screens, and an admin
-question editor backed by the three services. Review restored protection against
-unissued questions and answer replay and removed test flakiness. Five API/UI
-tests, a live browser playthrough, and independent final validation passed. The
-[generated README](generated/space-fractions/README.md) maps each use case to
-runnable routes and tests. Its development login and in-memory persistence are
-demonstration limits, not production security or durability.
+adapter after desktop requirements were added to the prompt. The normal generation
+workflow completed in 30 turns with 29 tool calls and passed the desktop checks.
+It includes an animated intro, main menu, playable fraction flow, pause/resume,
+score and help screens, exit controls, and an admin question editor. A focused
+Code Agent repair pass corrected macOS frame layout and wrong-answer feedback; no
+game code was hand-edited. Four headless tests, compilation, Tkinter launch, and
+independent final validation passed. The
+[generated README](generated/space-fractions/README.md) maps web/cloud source
+guidance to local modules and JSON persistence and documents demo limitations.
 
 Parser recognition is tailored to the source conventions. Context compaction, input
 token budgets, resumable runs, --spec import, and process isolation are deferred.

@@ -122,6 +122,9 @@ def test_prompt_requires_ui_when_architecture_describes_visual_experience(archit
     assert "introductory movie" in source_text
     assert "main menu" in source_text
     assert "ending scene with feedback" in source_text
-    assert "a working browser interface is required" in SYSTEM_PROMPT
-    assert "Backend endpoints alone do not satisfy" in SYSTEM_PROMPT
-    assert "production build and meaningful UI interaction tests" in SYSTEM_PROMPT
+    assert "LOCAL DESKTOP APPLICATION WITH A GRAPHICAL" in SYSTEM_PROMPT
+    assert "must not require opening localhost in a browser" in SYSTEM_PROMPT
+    assert "Prefer Python 3 and\nTkinter" in SYSTEM_PROMPT
+    assert "not just backend/domain logic" in SYSTEM_PROMPT
+    assert "python main.py" in SYSTEM_PROMPT
+    assert "non-GUI domain tests" in SYSTEM_PROMPT

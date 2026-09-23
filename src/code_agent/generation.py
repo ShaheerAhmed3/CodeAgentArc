@@ -20,7 +20,7 @@ from code_agent.reporting import redact, report_payload, trace_message
 from code_agent.tools import coding_tools
 from code_agent.tools.command import CommandResult
 from code_agent.tools.command import RunCommandTool
-from code_agent.validation.validator import ValidationCheck, ValidationReport, validate_repository
+from code_agent.validation.validator import ValidationCheck, ValidationPolicy, ValidationReport, validate_repository
 from code_agent.workspace.workspace import Workspace
 
 
@@ -68,7 +68,9 @@ def verify_existing(*, project_root: Path, output: Path,
                    if not re.search(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL", name, re.IGNORECASE)}
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     result = RunCommandTool(workspace, timeout=120, environment=environment).run(command)
-    validation = validate_repository(workspace, command_results=[result])
+    validation = validate_repository(
+        workspace, policy=ValidationPolicy(require_desktop_game=True), command_results=[result]
+    )
     validation = ValidationReport(validation.checks + (
         ValidationCheck("final_verification", result.success,
                         "Independent post-run verification passed" if result.success else
@@ -120,9 +122,11 @@ def generate(*, architecture_doc: Path, architecture_view: Path, output: Path,
     directory = _artifact_directory(workspace)
     directory.mkdir()
     initial = build_messages(architecture, (
-        "Generate the architecture-described application in this empty workspace. "
+        "Generate the architecture-described game in this empty workspace as a local desktop "
+        "application with a graphical UI. Prefer Python and Tkinter. It must run without a browser "
+        "or hosted server; adapt conflicting web/deployment guidance while preserving functional behavior. "
         f"Host OS: {sys.platform}. Python executable available: {sys.executable}. "
-        "Use the architecture's stack. On Windows invoke executables directly, not .cmd/.bat launchers."
+        "On Windows invoke executables directly, not .cmd/.bat launchers."
     ))
     # Defense in depth if a source file accidentally contains the configured key.
     initial = tuple(replace(message, content=redact(message.content, config.api_key, limit=None)) for message in initial)
@@ -177,7 +181,9 @@ def generate(*, architecture_doc: Path, architecture_view: Path, output: Path,
                 except Exception:
                     pass  # Cleanup must not hide the original outcome or reveal SDK data.
         evidence = list(verification.values())
-        validation = validate_repository(workspace, command_results=evidence)
+        validation = validate_repository(
+            workspace, policy=ValidationPolicy(require_desktop_game=True), command_results=evidence
+        )
         validation = ValidationReport(validation.checks + (
             ValidationCheck("final_verification", bool(evidence),
                             "Final verification evidence recorded" if evidence else

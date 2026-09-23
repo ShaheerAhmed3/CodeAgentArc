@@ -119,3 +119,42 @@ def test_internal_link_alias_cannot_satisfy_required_path(repository, directory_
     assert not report.success
     assert not next(c for c in report.checks if c.name == "readme").passed
     assert not next(c for c in report.checks if c.name == "required:linked/README.md").passed
+
+
+def make_desktop_game(repository):
+    repository.resolve("README.md").write_text(
+        "# Fraction Game\n\n```sh\npython main.py\n```\n\n```sh\npython -m pytest\n```\n",
+        encoding="utf-8",
+    )
+    repository.resolve("src/app.py").unlink()
+    repository.resolve("main.py").write_text(
+        "import tkinter as tk\n"
+        "class Game:\n"
+        " def start_game(self): self.question = '1/2'\n"
+        " def check_answer(self, answer): self.score = int(answer == self.question)\n"
+        " def finish_game(self): self.game_over = True\n"
+        "def main(): tk.Tk().mainloop()\n"
+        "if __name__ == '__main__': main()\n",
+        encoding="utf-8",
+    )
+    repository.resolve("tests/test_app.py").write_text(
+        "from main import Game\ndef test_game_answer_score():\n game = Game(); game.start_game(); game.check_answer('1/2'); assert game.score == 1\n",
+        encoding="utf-8",
+    )
+
+
+def test_desktop_game_policy_accepts_local_gui_with_documented_commands(repository):
+    make_desktop_game(repository)
+    report = validate_repository(repository, policy=replace(ValidationPolicy(), require_desktop_game=True))
+    assert report.success, report.errors
+    assert next(c for c in report.checks if c.name == "desktop_ui").detail.endswith("Tkinter")
+
+
+def test_desktop_game_policy_rejects_backend_or_browser_only_repository(repository):
+    repository.resolve("README.md").write_text(
+        "Run npm start, then open http://localhost:3000 in a browser.\n",
+        encoding="utf-8",
+    )
+    report = validate_repository(repository, policy=replace(ValidationPolicy(), require_desktop_game=True))
+    failed = {check.name for check in report.checks if not check.passed}
+    assert {"desktop_ui", "desktop_entrypoint", "no_browser_dependency", "game_functionality", "readme_commands"} <= failed

@@ -253,13 +253,13 @@ source assumptions separately from decisions and warns against silently rewritin
 awkward requirements. Whole-source duplication remains in the archival JSON export,
 not in the model context. It asks for a concise plan, not private reasoning.
 
-The prompt treats an explicitly described web or visual experience as a required
-deliverable. A generated API does not satisfy named screens, menus, scenes, or
-interactive user flows. In that case the repository must contain a connected browser
-interface, document how to open it, and verify both a production build and meaningful
-UI interactions. When a required binary media asset is not supplied, the generator
-must retain the flow with a code-native CSS, SVG, or canvas treatment and disclose
-the missing production asset.
+The evaluator's explicit delivery constraint takes precedence over incompatible
+web/cloud suggestions in the source: this workflow must produce a local desktop GUI,
+preferably Python/Tkinter, with no browser or hosted-server dependency. A generated
+API or browser frontend alone does not satisfy named screens, menus, scenes, or
+interactive flows. The prompt requires a direct entry point, exact launch/test
+commands, separation of GUI and domain logic, and headless domain tests. Missing
+binary media is represented with code-native desktop widgets or drawing.
 
 Output is restricted to a project directory under the current project's generated/
 root. The root itself, nonempty destinations, and linked path components are refused.
@@ -308,22 +308,15 @@ security claim is made for arbitrary commands reading secrets elsewhere on the h
 ## Remaining limitations
 
 The full pipeline is tested offline, including write/read/test/repair/finish and failure
-outcomes. An early Gemini tool loop succeeded, but the first full
-attempt failed. Later, a full request and a one-line request both
-returned HTTP 503 before any agent turn. The report now records safe error
-metadata without exposing the SDK body. OpenAI's live tool-call round trip passed.
-The OpenAI agent then produced a runnable Space Fractions repository with three
-services and five passing integration tests. Its initial structural validation
-failed after a final README write invalidated earlier test evidence. The explicit
-`verify` command reran those tests against final files, preserved the initial
-result, and recorded independent post-run validation as successful. Review found
-scoring replay and answer-key exposure, which focused AgentLoop runs repaired.
-The agent added two regression tests; seven tests now pass repeatedly. One
-follow-up model request failed with a service error after the code changes, so
-independent post-run verification supplies the final evidence. The resulting
-application documents in-memory persistence and placeholder authentication as
-demonstration limits; it has no student-facing browser UI and is not production
-ready. Normalized JSON import,
+outcomes. The OpenAI adapter generated the checked-in Tkinter Space Fractions
+repository from the supplied documents through the normal workflow. Deterministic
+validation confirmed a desktop framework, entry point, browser independence, core
+game flows, README commands, domain tests, and successful command evidence. A later
+Code Agent repair pass fixed a macOS stacked-frame layout defect and a wrong-answer
+feedback indexing bug and added two regression tests; no generated game code was
+hand-edited. Four tests, compilation, Tkinter launch, and independent post-run
+verification pass. The application documents local JSON persistence and demo-only
+admin authentication as limitations. Normalized JSON import,
 resume/checkpoint support, context
 compaction, token budgets, and OS process isolation remain deferred. Turn limits and
 HTTP/command timeouts do not bound total token spending or the number of calls in one

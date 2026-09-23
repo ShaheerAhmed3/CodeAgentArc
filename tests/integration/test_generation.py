@@ -23,14 +23,14 @@ def generation_args(tmp_path):
 
 def script():
     files = {
-        "README.md": "# Example\n",
+        "README.md": "# Example\n\nRun:\n```sh\npython main.py\n```\n\nTest:\n```sh\npython -m unittest discover -s tests\n```\n",
         "requirements.txt": "# standard library only\n",
-        "app.py": "def answer():\n    return 42\n",
-        "tests/test_app.py": "import unittest\nfrom app import answer\nclass TestAnswer(unittest.TestCase):\n    def test_answer(self): self.assertEqual(answer(),42)\n",
+        "main.py": "class Game:\n    def start_game(self): self.question = '1/2'\n    def check_answer(self, answer): self.score = int(answer == '1/2')\n    def finish_game(self): self.game_over = True\n\ndef main():\n    import tkinter as tk\n    root = tk.Tk()\n    root.title('Question Game')\n    root.mainloop()\n\nif __name__ == '__main__':\n    main()\n",
+        "tests/test_game.py": "import unittest\nfrom main import Game\nclass TestGame(unittest.TestCase):\n    def test_answer_updates_score(self):\n        game = Game(); game.start_game(); game.check_answer('1/2'); self.assertEqual(game.score, 1)\n",
     }
     return [
         ModelResponse(tool_calls=tuple(ToolCall(f"write-{i}", "write_file", {"path": path, "content": content}) for i, (path, content) in enumerate(files.items()))),
-        ModelResponse(tool_calls=(ToolCall("read", "read_file", {"path": "app.py"}),)),
+        ModelResponse(tool_calls=(ToolCall("read", "read_file", {"path": "main.py"}),)),
         ModelResponse(tool_calls=(ToolCall("test", "run_command", {"command": [sys.executable, "-m", "unittest", "discover", "-s", "tests"], "verification": True}),)),
         ModelResponse(tool_calls=(ToolCall("finish", "finish", {"summary": "Example implemented", "tests_run": ["unittest discover -s tests"]}),)),
         ModelResponse("Example ready"),
@@ -68,7 +68,7 @@ def test_offline_generation_pipeline_reports_and_traces(generation_args, monkeyp
     trace = (artifacts / "run.jsonl").read_text()
     events = [json.loads(line) for line in trace.splitlines()]
     assert events[-1]["event"] == "run_end"
-    assert "def answer" not in trace
+    assert "start_game" not in trace
     assert "Example ready" not in trace
     assert any(event.get("content_characters") for event in events)
     assert any(event.get("exit_code") == 0 for event in events)
@@ -160,9 +160,9 @@ def test_final_failed_verification_is_a_validation_failure(generation_args):
 def test_failed_test_repair_and_rerun_can_pass(generation_args):
     responses = script()
     calls = list(responses[0].tool_calls)
-    calls[2] = replace(calls[2], arguments={"path": "app.py", "content": "def answer():\n    return 41\n"})
+    calls[2] = replace(calls[2], arguments={"path": "main.py", "content": "class Game:\n    def start_game(self): self.question = '1/2'\n    def check_answer(self, answer): self.score = 41\n    def finish_game(self): self.game_over = True\n\ndef main():\n    import tkinter as tk\n    root = tk.Tk(); root.mainloop()\n\nif __name__ == '__main__': main()\n"})
     responses[0] = ModelResponse(tool_calls=tuple(calls))
-    responses.insert(3, ModelResponse(tool_calls=(ToolCall("repair", "edit_file", {"path": "app.py", "old_text": "41", "new_text": "42"}),)))
+    responses.insert(3, ModelResponse(tool_calls=(ToolCall("repair", "edit_file", {"path": "main.py", "old_text": "41", "new_text": "1"}),)))
     responses.insert(4, ModelResponse(tool_calls=(replace(responses[2].tool_calls[0], id="retest"),)))
     report = generate(**generation_args, mock_responses=responses)
     assert report.success
