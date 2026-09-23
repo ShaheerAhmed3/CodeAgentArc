@@ -1,114 +1,72 @@
 # Space Fractions
 
-A runnable, API-based fraction game built as three small Node.js and Express services.
-This repository is the checked-in example produced by CodeAgentArc from the
-files under `architecture/inputs/` at the project root. It has no browser
-interface.
+Source facts from architecture:
+- Style: Microservices (GameComponent, QuestionComponent, UserComponent)
+- Delivery: Web-based interactive learning tool with intro movie, main menu, question flow, ending scene with feedback
+- External API contract: OpenAPI /play returning gameId
+- Internal contract: GameService.Play in protobuf
+- Data models: games table defined; QuestionComponent data durability
 
-## What runs
+Implementation summary (minimum coherent system):
+- Tech stack (preserving recommended defaults where feasible for dev): Node.js 18, Express.js 4. PostgreSQL/Redis/RabbitMQ/Elasticsearch/Prometheus/Jenkins/Terraform are explicitly deferred for local dev; in-memory + JSON-only flows are used. Reasons: avoid disproportionate infra for the educational demo while user-facing behavior stays complete.
+- Three microservices run in a single Node process on distinct ports for simplicity:
+  - Game service (port 3000): serves UI, orchestrates game logic, exposes API implementing state transitions (Playing → Paused → Playing, Playing → GameOver). Proxies auth and admin updates.
+  - Question service (port 3001): manages questions, provides next/check APIs, supports admin update.
+  - User service (port 3002): minimal login issuing a user identity; username "admin" yields admin role (temporary dev-only policy).
+- Frontend: Accessible, responsive, vanilla HTML/CSS/JS served by the Game service. Screens implemented: Intro (animated canvas), Main Menu, Game (questions with keyboard control and pause/resume), Score, Help, Admin (update questions).
 
-| Service | Default port | Responsibility |
-| --- | --- | --- |
-| Game | 3001 | Starts games, serves questions, checks answers, tracks score and state |
-| Question | 3002 | Stores questions, returns questions without answers, checks answers, accepts admin updates |
-| User | 3003 | Issues and validates simple role tokens for local testing |
+Ambiguities/conflicts and resolutions:
+- Traceability table references sql/question_ddl.sql while deliverables list sql/game_ddl.sql. Implemented both to honor both references; QuestionComponent persists questions in production (assumption), GameComponent persists game state (source SQL). For dev, both are deferred with in-memory stores.
+- Authn/Authz specifies OAuth2. Deferred; replaced by temporary username-based login to satisfy End User/Admin use cases without introducing secrets in browser code. Documented as a dev-only choice.
+- Microservices vs single process: architecture requires microservices; to minimize local complexity, services are isolated as Express apps on separate ports but launched by a single node process. Containerization/Kubernetes manifests are provided but not wired for local demo.
 
-The Game service calls Question over HTTP. Question calls User to authorize
-admin updates. Games and questions live in memory, so restarting a service
-resets its data. The token is simply `user` or `admin`; this demonstrates the
-service interaction and must not be treated as secure authentication.
+Assumptions (from source and additional for implementation):
+- A1 (source): Up to 1000 concurrent users; out of scope for local demo but supported by stateless APIs and separate services.
+- Additional: For demo, a game has 5 questions. Question bank can be updated via Admin page JSON upload.
 
-## Install and test
+Security deferments:
+- OAuth2, TLS, secret rotation, and service mesh are not implemented in this local build. Admin role is assigned if username is "admin" (insecure; dev-only). No secrets are sent to the frontend; only a transient session cookie (random id) is used by Game service.
 
-Requires Node.js 18 or newer. The following commands work in macOS Terminal and
-Windows PowerShell. From this directory:
+Operations deferments:
+- PostgreSQL/Redis/RabbitMQ/Elasticsearch/Prometheus/Jenkins/Terraform/Docker are intentionally not provisioned. SQL DDLs and k8s deployment snippet are included per architecture deliverables.
 
-```sh
-npm install
-npm test
-```
+How to run (requires Node.js >= 18):
+1. Install Node.js 18 (e.g., via nvm). Ensure `node -v` prints v18+.
+2. Install dependencies: `npm install`
+3. Start all services and UI: `npm start`
+4. Open the frontend: http://localhost:3000
 
-The seven tests start and stop all three services automatically.
+Frontend usage:
+- Intro screen shows a spaceship animation; use Skip Intro or Start to reach the menu.
+- Main Menu: Login with a username (type "admin" to access the Admin screen). Play Game starts a new game; View Score shows your last game score; View Help displays instructions.
+- Game: Use number keys 1-4 or click options to answer. Press P or use Pause/Resume buttons to pause/resume. After 5 questions, the Score screen appears.
+- Admin: Paste a JSON array of questions with fields { id, prompt, options, answerIndex } and submit to replace the question bank.
 
-## Run locally on macOS
+API mapping to use cases and tests:
+- End User — Play Game: `GET /api/play`, `GET /api/game/:id/next-question`, `POST /api/game/:id/answer`, state transitions `POST /api/game/:id/(pause|resume)`.
+- End User — View Score: `GET /api/score/current`.
+- End User — View Help: `GET /api/help`.
+- Admin — Update Questions: `POST /api/admin/questions` (requires admin login via `/api/login` with username "admin").
 
-Start each service in a separate Terminal window from this directory:
+Artifacts included (from architecture deliverables):
+- openapi.yaml, internal.proto, k8s/spacefractions-deployment.yaml, sql/game_ddl.sql, sql/question_ddl.sql, traceability_matrix.csv
 
-```sh
-PORT=3003 node services/user-service/src/start.js
-PORT=3002 USER_BASE=http://localhost:3003 node services/question-service/src/start.js
-PORT=3001 QUESTION_BASE=http://localhost:3002 node services/game-service/src/start.js
-```
+Testing
+- Unit/integration tests use Jest and Supertest to exercise the Game/Question APIs and the state machine transitions, plus jsdom-based UI tests for the question flow calling real service endpoints.
+- The five tests also reject unissued-question submissions and repeated answers so one question cannot score twice.
+- Note: Running tests requires Node/npm. In CI, run: `npm test`.
 
-## Run locally on Windows
+Accessibility/UX notes:
+- Visible focus styles and keyboard operation for all interactive elements.
+- ARIA labels and polite live regions for dynamic content (prompt, feedback, user status).
+- Responsive grid for options and readable contrast.
 
-Start each service in a separate PowerShell window from this directory:
+Project structure
+- services/game-service: Game logic + UI server
+- services/question-service: Questions API and admin update
+- services/user-service: Minimal auth
+- frontend/public: Static assets (HTML/CSS/JS)
+- sql, k8s, openapi.yaml, internal.proto: architecture artifacts
 
-```powershell
-$env:PORT="3003"; node services/user-service/src/start.js
-$env:PORT="3002"; $env:USER_BASE="http://localhost:3003"; node services/question-service/src/start.js
-$env:PORT="3001"; $env:QUESTION_BASE="http://localhost:3002"; node services/game-service/src/start.js
-```
-
-The order above starts dependencies before callers. Each service also has a
-`GET /healthz` endpoint.
-
-The examples below use `curl`, which is available on macOS. On Windows, use
-`curl.exe` if PowerShell maps `curl` to another command.
-
-## Try a game
-
-1. `curl -s http://localhost:3001/play` returns a `gameId`.
-2. Replace `<gameId>` below with that value. `curl -s http://localhost:3001/game/<gameId>/question` returns an ID, prompt, and options without the correct answer.
-3. Submit that question ID and an option index:
-
-   ```sh
-   curl -s -X POST http://localhost:3001/game/<gameId>/answer \
-     -H 'Content-Type: application/json' \
-     -d '{"questionId":"<questionId>","answerIndex":1}'
-   ```
-
-4. `curl -s http://localhost:3001/score/<gameId>` shows the current score.
-5. `curl -s http://localhost:3001/help` shows game instructions.
-
-To add a question, get an admin token and send it to the Question service:
-
-```sh
-curl -s -X POST http://localhost:3003/token \
-  -H 'Content-Type: application/json' -d '{"role":"admin"}'
-curl -s -X POST http://localhost:3002/questions \
-  -H 'Authorization: Bearer admin' -H 'Content-Type: application/json' \
-  -d '{"prompt":"1/2 + 1/4 = ?","options":["1/4","3/4","2/3"],"answerIndex":1}'
-```
-
-For a game in `Playing`, `POST /game/<gameId>/pause` moves it to `Paused`,
-`POST /game/<gameId>/resume` returns it to `Playing`, and
-`POST /game/<gameId>/gameover` ends it. Invalid transitions return HTTP 400.
-Only a question issued to the current game can be answered, and one question
-cannot score twice. A request to update questions without an admin token fails.
-
-The seven integration tests start all three services on temporary ports and
-exercise play, score, help, admin updates, state transitions, and answer replay.
-They need no separate server process or database.
-
-## Architecture choices and limits
-
-The architecture describes three components, a `/play` OpenAPI contract,
-internal service and data contracts, and use cases for playing, viewing score
-and help, and updating questions. The example uses UUID game IDs; the source
-OpenAPI excerpt specified an integer, so this repository's `openapi.yaml`
-records the actual UUID response. Additional HTTP routes make the other use
-cases runnable. The source also
-mentions PostgreSQL, Redis, RabbitMQ, Elasticsearch, OAuth2, Kubernetes, and
-other infrastructure; these are represented by reference artifacts where
-available, but are not running dependencies of this local example.
-
-The repository includes `openapi.yaml`, `internal.proto`, SQL schema examples,
-`k8s/spacefractions-deployment.yaml`, `architecture.md`, and
-`traceability_matrix.csv`. The proto and Kubernetes files document intended
-contracts and deployment shape; the local services communicate over HTTP and
-do not run in Kubernetes. The SQL files describe future persistence, while
-the running app uses memory. This implementation has no browser UI or
-production authentication. The Question service's `/check` route is reachable
-directly in this local version, so answers can be probed. A real deployment
-would restrict internal routes and replace the token service.
+License
+- Educational demo.

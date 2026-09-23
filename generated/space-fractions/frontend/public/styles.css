@@ -1,0 +1,20 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; color: #e6eef8; background: #0b1a2b; }
+header, footer { background: #0f2744; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between; }
+nav button.linklike { background: none; border: none; color: #9fd3ff; text-decoration: underline; cursor: pointer; }
+nav button.linklike:focus { outline: 2px solid #ffd54f; }
+main { padding: 1rem; min-height: 70vh; }
+.scene { max-width: 900px; margin: 0 auto; }
+.hidden { display: none; }
+.controls, .panel, .hud { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+button { background: #1e88e5; color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: pointer; }
+button:focus { outline: 3px solid #ffd54f; }
+button.hidden { display: none; }
+.prompt { margin: 1rem 0; font-size: 1.25rem; background: #102b4a; padding: 1rem; border-radius: 6px; }
+.options { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; }
+.options li { background: #143a63; padding: 0.75rem; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
+.options li:focus { outline: none; border-color: #ffd54f; }
+.feedback { min-height: 1.5rem; margin-top: 0.5rem; }
+.login { margin-top: 0.5rem; }
+#introCanvas { width: 100%; height: auto; background: radial-gradient(#0d2a4d, #081a2c); border: 1px solid #20496f; border-radius: 8px; }
+@media (max-width: 600px) { .options { grid-template-columns: 1fr; } }

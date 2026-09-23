@@ -139,48 +139,34 @@ the prompt while all sections and PlantUML blocks remain available.
 
 ## Run the checked-in Space Fractions example
 
-The generated example uses Node.js. Install and test it from its directory.
-These commands are the same in macOS Terminal and Windows PowerShell:
+The generated example uses Node.js and includes a browser game. It starts all
+three services from one command.
+
+### macOS
 
 ~~~sh
 cd generated/space-fractions
 npm install
 npm test
+npm start
 ~~~
 
-The seven integration tests start all three services on temporary ports. To run
-the services manually, open three terminals in `generated/space-fractions`.
-
-### macOS service commands
-
-~~~sh
-PORT=3003 node services/user-service/src/start.js
-PORT=3002 USER_BASE=http://localhost:3003 node services/question-service/src/start.js
-PORT=3001 QUESTION_BASE=http://localhost:3002 node services/game-service/src/start.js
-~~~
-
-### Windows PowerShell service commands
+### Windows PowerShell
 
 ~~~powershell
-$env:PORT="3003"; node services/user-service/src/start.js
-$env:PORT="3002"; $env:USER_BASE="http://localhost:3003"; node services/question-service/src/start.js
-$env:PORT="3001"; $env:QUESTION_BASE="http://localhost:3002"; node services/game-service/src/start.js
+cd generated/space-fractions
+npm install
+npm test
+npm start
 ~~~
 
-Start them in the displayed order. The User service listens on port 3003,
-Question on 3002, and Game on 3001. Verify them from a fourth terminal:
-
-~~~sh
-curl http://localhost:3003/healthz
-curl http://localhost:3002/healthz
-curl http://localhost:3001/healthz
-curl http://localhost:3001/play
-~~~
-
-In Windows PowerShell, use `curl.exe` in place of `curl` if PowerShell maps
-`curl` to another command. See the
-[Space Fractions README](generated/space-fractions/README.md) for the complete
-game and admin request flow.
+The five Jest tests start the services on temporary ports and cover the API,
+state transitions, admin updates, score protection, and the browser flow.
+After `npm start`, open [http://localhost:3000](http://localhost:3000).
+The Game service and UI use port 3000, Question uses 3001, and User uses 3002.
+Press `Control+C` in the terminal to stop all three. See the
+[Space Fractions README](generated/space-fractions/README.md) for gameplay,
+admin usage, architecture decisions, and production limitations.
 
 ## Providers and tools
 
@@ -308,15 +294,16 @@ generated/space-fractions/  checked-in demonstration output
 generated/                other runs and normalization exports are ignored
 ~~~
 
-The checked-in Space Fractions example was generated with the OpenAI adapter in
-34 turns and 33 tool calls. Review found a scoring replay bug and an exposed
-answer-key route; follow-up runs through the same loop repaired the code and
-added regression tests. Seven integration tests and independent final validation
-passed. The
+The checked-in Space Fractions example was freshly generated with the OpenAI
+adapter after browser UI requirements were added to the prompt. It completed in
+57 turns with 56 tool calls. It includes an animated intro, main menu, playable
+question flow, pause/resume controls, score and help screens, and an admin
+question editor backed by the three services. Review restored protection against
+unissued questions and answer replay and removed test flakiness. Five API/UI
+tests, a live browser playthrough, and independent final validation passed. The
 [generated README](generated/space-fractions/README.md) maps each use case to
-runnable routes and tests. The example exposes HTTP APIs but has no
-browser UI. Its local token scheme and in-memory persistence are demonstration
-limits, not production security or durability.
+runnable routes and tests. Its development login and in-memory persistence are
+demonstration limits, not production security or durability.
 
 Parser recognition is tailored to the source conventions. Context compaction, input
 token budgets, resumable runs, --spec import, and process isolation are deferred.

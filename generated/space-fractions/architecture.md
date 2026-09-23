@@ -1,11 +1,12 @@
-This file summarizes the architectural inputs used for the runnable example.
+# Architecture Snapshot (from source)
 
-- Architectural style: Microservices
-- Components: GameComponent, QuestionComponent, UserComponent
-- OpenAPI contract: see openapi.yaml
+This repository includes architecture artifacts derived from the provided documentation to maintain traceability.
+
+- Executive Summary: Microservices for Game, Question, User components on cloud infrastructure
+- External API: see openapi.yaml
 - Internal contract: see internal.proto
-- Data model: see sql/game_ddl.sql
-- K8s deployment snippet: see k8s/spacefractions-deployment.yaml
-- Traceability matrix: see traceability_matrix.csv
+- Data models: see sql/*.sql
+- K8s snippet: see k8s/spacefractions-deployment.yaml
+- Traceability: see traceability_matrix.csv
 
-The repository adds minimal endpoints implementing the use cases and state transitions as runnable behavior. Infra pieces (DB/Redis/RabbitMQ/etc.) are explicitly deferred for local runs.
+For the full normalized source content, refer to the Architecture JSON embedded in the task input.
