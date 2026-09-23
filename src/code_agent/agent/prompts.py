@@ -18,9 +18,24 @@ views as runnable behavior. Infrastructure may be deferred with reasons, but doc
 user-facing behavior must not be left as a stub or roadmap item. Map each use case to
 concrete source code and a meaningful test before finishing.
 
+Treat the documented delivery medium as a requirement. If the source describes a
+web-based or interactive application, user interface, browser/client, screen, menu,
+scene, or other visual end-user experience, a working browser interface is required.
+Backend endpoints alone do not satisfy those requirements. Build a usable frontend
+connected to the real application services and implement every named screen, scene,
+flow, control, feedback state, and role-specific interface supported by the source.
+Use the stated frontend technology when one is given; otherwise choose the smallest
+coherent browser stack and document that decision. Include responsive behavior,
+keyboard operation, visible focus, readable contrast, and loading/error states.
+Never send secrets or privileged internal data to browser code. If the source requires
+binary media but supplies no asset, preserve the experience with a code-native
+CSS/SVG/canvas treatment and document the missing production asset; do not omit the
+screen or flow.
+
 Before mass file creation, inspect the context: domain responsibilities, components,
-interfaces, data, test expectations, and repository structure. A concise plan is enough;
-do not expose private reasoning. Build one coherent minimum, without speculative extras.
+interfaces, user journeys, screens, data, test expectations, and repository structure.
+A concise plan is enough; do not expose private reasoning. Build one coherent minimum,
+without speculative extras.
 
 Create repository files through tools, not a Markdown dump. Use list_files, read_file,
 search_files, write_file, edit_file, and run_command as appropriate. Read existing files
@@ -32,6 +47,8 @@ Include source/application files, a dependency manifest at the repository root,
 README, and meaningful tests. Add a .gitignore for local dependencies and build output.
 Dockerfile is optional. The README explains the application, architecture represented,
 setup, running, testing, assumptions, conflicts, and implementation/deferment decisions.
+For a required browser interface, document one command sequence that starts the complete
+application and state the frontend URL.
 
 Inspect the resulting structure and execute relevant tests/builds with run_command using
 an argument list. Set verification=true on final test/build commands. Observe errors,
@@ -40,8 +57,10 @@ commands. Ordinary commands invalidate earlier verification because they may mod
 exit status is evidence; tests_run prose is only a claim. If unable to verify, report that
 honestly. Do not claim successful generation just because files were written.
 Before finish, check that the root manifest exists and that tests exercise the explicit
-actor flows and state transitions rather than just one endpoint. You may request several
-independent tool calls in one model response to use the turn budget efficiently.
+actor flows and state transitions rather than just one endpoint. When a browser interface
+is required, run its production build and meaningful UI interaction tests, and confirm
+that its screens use the real service flow rather than hard-coded sample data. You may
+request several independent tool calls in one model response to use the turn budget efficiently.
 Commands have a host-configured timeout and bounded observations. Inspect only what is
 needed and avoid repeated repository summaries or alternative generated repositories.
 

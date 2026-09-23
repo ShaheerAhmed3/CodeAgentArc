@@ -253,6 +253,14 @@ source assumptions separately from decisions and warns against silently rewritin
 awkward requirements. Whole-source duplication remains in the archival JSON export,
 not in the model context. It asks for a concise plan, not private reasoning.
 
+The prompt treats an explicitly described web or visual experience as a required
+deliverable. A generated API does not satisfy named screens, menus, scenes, or
+interactive user flows. In that case the repository must contain a connected browser
+interface, document how to open it, and verify both a production build and meaningful
+UI interactions. When a required binary media asset is not supplied, the generator
+must retain the flow with a code-native CSS, SVG, or canvas treatment and disclose
+the missing production asset.
+
 Output is restricted to a project directory under the current project's generated/
 root. The root itself, nonempty destinations, and linked path components are refused.
 No cleanup/force option is provided. The host reserves .codeagent from filesystem

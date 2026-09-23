@@ -4,7 +4,7 @@ import re
 
 from code_agent.agent.loop import AgentLoop
 from code_agent.agent.models import ModelResponse, ToolCall, ToolDefinition
-from code_agent.agent.prompts import build_messages
+from code_agent.agent.prompts import SYSTEM_PROMPT, build_messages
 from code_agent.architecture.normalizer import normalize_architecture
 from code_agent.cli import main
 from code_agent.providers.mock import MockProvider
@@ -114,3 +114,14 @@ def test_normalization_prompt_loop_and_workspace_work_together(architecture, tmp
     assert provider.requests[1].messages[-1].tool_result.content == "Test-only fixture"
     assert "Space Fractions" in provider.requests[0].messages[2].content
     assert not list(workspace.root.glob("*.py"))
+
+
+def test_prompt_requires_ui_when_architecture_describes_visual_experience(architecture):
+    source_text = "\n".join(section.content for section in architecture.documentation_sections)
+    assert "web-based, interactive learning tool" in source_text
+    assert "introductory movie" in source_text
+    assert "main menu" in source_text
+    assert "ending scene with feedback" in source_text
+    assert "a working browser interface is required" in SYSTEM_PROMPT
+    assert "Backend endpoints alone do not satisfy" in SYSTEM_PROMPT
+    assert "production build and meaningful UI interaction tests" in SYSTEM_PROMPT

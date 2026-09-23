@@ -35,7 +35,10 @@ This is an iterative agent: it can read real files, observe test failures, edit
 the implementation, and rerun checks. It does not ask the model to return a
 repository as one giant Markdown response. The generation prompt requires
 source fidelity, a coherent minimum implementation, documented decisions,
-inspection before edits, and verification before completion.
+inspection before edits, and verification before completion. When an input
+describes a web interface, screen, menu, scene, or visual user flow, the prompt
+requires a connected browser UI; backend endpoints alone do not count as the
+finished user experience.
 
 ## Setup and offline tests
 
